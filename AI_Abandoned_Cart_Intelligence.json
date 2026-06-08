@@ -1,0 +1,1166 @@
+{
+  "name": "\ud83d\uded2 AI Abandoned Cart Intelligence System",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// Build the owner WhatsApp alert \u2014 sent once per batch with intelligence summary\nconst d = $input.first().json;\n\nif (!d.toProcess || d.toProcess.length === 0) {\n  return [{ json: { skipAlert: true } }];\n}\n\n// Find the highest-value at-risk cart\nconst sortedByValue = [...d.toProcess].sort((a, b) => b.cart.cartValue - a.cart.cartValue);\nconst topCart = sortedByValue[0];\n\n// Approach distribution\nconst counts = d.counts || {};\nconst channelCounts = { email: 0, whatsapp: 0, both: 0 };\nd.toProcess.forEach(p => {\n  if (p.sendEmail && p.sendWhatsapp) channelCounts.both++;\n  else if (p.sendEmail) channelCounts.email++;\n  else if (p.sendWhatsapp) channelCounts.whatsapp++;\n});\n\n// Touch breakdown\nconst touchBreakdown = { t1: 0, t2: 0, t3plus: 0 };\nd.toProcess.forEach(p => {\n  const t = p.decision.touch_number || 1;\n  if (t === 1) touchBreakdown.t1++;\n  else if (t === 2) touchBreakdown.t2++;\n  else touchBreakdown.t3plus++;\n});\n\n// Build the alert message\nconst lines = [];\nlines.push('\ud83d\uded2 *Cart Recovery Batch \u2014 ' + new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'}) + '*');\nlines.push('');\nlines.push('\ud83d\udcca *' + d.processCount + ' carts engaged*');\nlines.push('\ud83d\udcb0 \u20b9' + d.totalValueAtStake.toLocaleString('en-IN') + ' total at stake');\nlines.push('\ud83c\udf81 \u20b9' + d.totalPotentialSavings.toLocaleString('en-IN') + ' total discounts offered');\nlines.push('');\nlines.push('*\ud83c\udfaf Approach Mix:*');\nif (counts.NUDGE_NO_DISCOUNT) lines.push('\u2022 ' + counts.NUDGE_NO_DISCOUNT + ' x No-discount nudge');\nif (counts.SOFT_DISCOUNT_10) lines.push('\u2022 ' + counts.SOFT_DISCOUNT_10 + ' x Soft 10% off');\nif (counts.URGENT_DISCOUNT_15) lines.push('\u2022 ' + counts.URGENT_DISCOUNT_15 + ' x Urgent 15% off');\nif (counts.LOYALTY_DISCOUNT_20) lines.push('\u2022 ' + counts.LOYALTY_DISCOUNT_20 + ' x Loyalty 20% off');\nif (counts.WIN_BACK_25) lines.push('\u2022 ' + counts.WIN_BACK_25 + ' x Win-back 25% off');\nlines.push('');\nlines.push('*\ud83d\udcf2 Touch Mix:*');\nlines.push('\u2022 T1: ' + touchBreakdown.t1 + ' first reminder');\nlines.push('\u2022 T2: ' + touchBreakdown.t2 + ' follow-up');\nlines.push('\u2022 T3+: ' + touchBreakdown.t3plus + ' last chance');\nlines.push('');\nlines.push('*\ud83d\udea8 Highest Value At Risk:*');\nlines.push(topCart.cart.customerName + ' (' + topCart.cart.profile.customerTier + ')');\nlines.push('\u20b9' + topCart.cart.cartValue.toLocaleString('en-IN') + ' \u2022 ' + topCart.decision.approach.replace(/_/g,' '));\nlines.push('');\nif (d.batchSummary) {\n  lines.push('*\ud83d\udca1 AI Strategy:*');\n  lines.push(d.batchSummary);\n}\n\nreturn [{ json: { ownerAlert: lines.join('\\n'), skipAlert: false } }];"
+      },
+      "id": "8caad06e-234b-460e-9e0a-0e2e1373bcd9",
+      "name": "\ud83d\udcca Build Owner Alert1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -576,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "should-alert",
+              "leftValue": "={{ $json.skipAlert }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "0fe36671-d748-43da-a460-675366e0c68d",
+      "name": "\ud83d\udea6 Should Alert Owner?1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        96,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "768894b2-24b7-4d30-b516-18311356c36c",
+      "name": "\u23f0 Every 15 Min Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -2592,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "18HzrQKEstKNeL1V3ZJiajLXLTMn_oitoDcitG4avp8M",
+          "mode": "list",
+          "cachedResultName": "AI Abandoned Cart Intelligence",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/18HzrQKEstKNeL1V3ZJiajLXLTMn_oitoDcitG4avp8M/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Abandoned_Carts_Tab",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/18HzrQKEstKNeL1V3ZJiajLXLTMn_oitoDcitG4avp8M/edit#gid=0"
+        },
+        "options": {}
+      },
+      "id": "89113d3e-7555-4972-a9fd-22280744b446",
+      "name": "\ud83d\udcca Read Abandoned Carts",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -2368,
+        112
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "18HzrQKEstKNeL1V3ZJiajLXLTMn_oitoDcitG4avp8M",
+          "mode": "list",
+          "cachedResultName": "AI Abandoned Cart Intelligence",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/18HzrQKEstKNeL1V3ZJiajLXLTMn_oitoDcitG4avp8M/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 55380115,
+          "mode": "list",
+          "cachedResultName": "Customer_History_Tab",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/18HzrQKEstKNeL1V3ZJiajLXLTMn_oitoDcitG4avp8M/edit#gid=55380115"
+        },
+        "options": {}
+      },
+      "id": "6e514b28-a723-494b-8b13-1964041e9fbd",
+      "name": "\ud83d\udc65 Read Customer History",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -2144,
+        112
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "18HzrQKEstKNeL1V3ZJiajLXLTMn_oitoDcitG4avp8M",
+          "mode": "list",
+          "cachedResultName": "AI Abandoned Cart Intelligence",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/18HzrQKEstKNeL1V3ZJiajLXLTMn_oitoDcitG4avp8M/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 3981189,
+          "mode": "list",
+          "cachedResultName": "Recovery_log_tab",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/18HzrQKEstKNeL1V3ZJiajLXLTMn_oitoDcitG4avp8M/edit#gid=3981189"
+        },
+        "options": {}
+      },
+      "id": "64fafd8a-1753-4083-b4db-f9bbb7401507",
+      "name": "\ud83d\udcc8 Read Recovery Log (Learning)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -1920,
+        112
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filter to PENDING carts only + enrich each with customer history + learning data\n// PLUS: skip any cart that has been messaged in the last 24 hours (Recovery_Log cooldown)\nconst cartRows = $('\ud83d\udcca Read Abandoned Carts').all().map(i => i.json);\nconst customers = $('\ud83d\udc65 Read Customer History').all().map(i => i.json);\nconst recoveries = $('\ud83d\udcc8 Read Recovery Log (Learning)').all().map(i => i.json);\n\nconst num = (v) => { const n = parseFloat(String(v).replace(/[^0-9.\\-]/g,'')); return isNaN(n)?0:n; };\nconst nowMs = Date.now();\n\n// Build cooldown set: cart IDs messaged in the last 24 hours\nconst COOLDOWN_HOURS = 24;\nconst recentlyMessaged = {};\nrecoveries.forEach(r => {\n  const cartId = r['Cart ID'];\n  if (!cartId) return;\n  const sentAt = r['Sent At'] ? new Date(r['Sent At']).getTime() : 0;\n  if (!sentAt || isNaN(sentAt)) return;\n  const hoursAgo = (nowMs - sentAt) / 3600000;\n  if (hoursAgo < COOLDOWN_HOURS) {\n    recentlyMessaged[cartId] = true;\n  }\n});\n\n// Index customers\nconst custByEmail = {};\nconst custByPhone = {};\ncustomers.forEach(c => {\n  if (c['Email']) custByEmail[String(c['Email']).toLowerCase().trim()] = c;\n  if (c['Phone']) custByPhone[String(c['Phone']).replace(/[^0-9]/g,'').slice(-10)] = c;\n});\n\n// Compute success rates per approach (learning data for the AI)\nconst approachStats = {};\nrecoveries.forEach(r => {\n  const ap = r['Approach Used'] || 'unknown';\n  if (!approachStats[ap]) approachStats[ap] = { sent: 0, recovered: 0, revenue: 0 };\n  approachStats[ap].sent++;\n  if (String(r['Outcome']).toUpperCase() === 'RECOVERED') {\n    approachStats[ap].recovered++;\n    approachStats[ap].revenue += num(r['Recovered Value']);\n  }\n});\nObject.keys(approachStats).forEach(k => {\n  const s = approachStats[k];\n  s.successRate = s.sent > 0 ? +(s.recovered / s.sent * 100).toFixed(1) : 0;\n  s.avgRevenue = s.recovered > 0 ? Math.round(s.revenue / s.recovered) : 0;\n});\n\n// Filter pending carts\nconst pending = [];\ncartRows.forEach(c => {\n  const cartId = c['Cart ID'];\n  if (!cartId) return; // sanity: skip rows without cart ID\n\n  // SKIP if already messaged in the last 24 hours\n  if (recentlyMessaged[cartId]) return;\n\n  // SKIP if status is anything except blank or PENDING\n  const status = String(c['Status'] || '').toUpperCase().trim();\n  if (status && status !== 'PENDING') return;\n\n  const abandonedAt = c['Abandoned At'] ? new Date(c['Abandoned At']) : null;\n  if (!abandonedAt || isNaN(abandonedAt)) return;\n  const minsSince = (nowMs - abandonedAt.getTime()) / 60000;\n\n  // Window: 15 minutes (just abandoned) to 48 hours (fresh enough to recover)\n  if (minsSince < 15 || minsSince > 2880) return;\n\n  // Lookup customer\n  const email = String(c['Customer Email'] || '').toLowerCase().trim();\n  const phone = String(c['Customer Phone'] || '').replace(/[^0-9]/g,'').slice(-10);\n  const customer = custByEmail[email] || custByPhone[phone] || null;\n  if (!email && !phone) return; // need at least one contact channel\n\n  const profile = customer ? {\n    isReturning: true,\n    lifetimeOrders: num(customer['Lifetime Orders']),\n    lifetimeValue: num(customer['Lifetime Value']),\n    avgOrderValue: num(customer['Avg Order Value']),\n    lastOrderDays: num(customer['Days Since Last Order']),\n    abandonHistory: num(customer['Past Abandons']),\n    pastRecoveries: num(customer['Past Recoveries']),\n    favoriteCategory: customer['Favorite Category'] || '',\n    lastDiscountUsed: num(customer['Last Discount Used']),\n    customerTier: customer['Tier'] || 'standard',\n    prefersChannel: customer['Preferred Channel'] || 'email'\n  } : { isReturning: false, lifetimeOrders: 0, lifetimeValue: 0, avgOrderValue: 0, lastOrderDays: 0, abandonHistory: 0, pastRecoveries: 0, customerTier: 'new', prefersChannel: 'email' };\n\n  pending.push({\n    cartId,\n    customerEmail: email,\n    customerPhone: phone,\n    customerName: c['Customer Name'] || 'there',\n    products: c['Products'] || '',\n    cartValue: num(c['Cart Value']),\n    currency: c['Currency'] || 'INR',\n    lastViewedProduct: c['Last Viewed Product'] || '',\n    timeOnSite: num(c['Time on Site Mins']),\n    source: c['Source'] || 'Web',\n    abandonedAt: c['Abandoned At'],\n    minsSinceAbandon: Math.round(minsSince),\n    profile\n  });\n});\n\nreturn [{ json: { pendingCarts: pending, approachStats, pendingCount: pending.length, recentlyMessagedCount: Object.keys(recentlyMessaged).length, runTime: new Date().toISOString() } }];"
+      },
+      "id": "35c1859e-b5e4-41c0-9337-fe607fc34916",
+      "name": "\ud83d\udd0d Filter & Enrich Carts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1696,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "has-carts",
+              "leftValue": "={{ $json.pendingCount }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "9534bf89-5d3e-4eda-b3c4-5b19dad6db94",
+      "name": "\ud83d\udea6 Any Pending Carts?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1472,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build AI Strategist prompt \u2014 now with multi-touch awareness + product parsing + structured WhatsApp\nconst d = $input.first().json;\nconst stats = JSON.stringify(d.approachStats, null, 1);\n\n// Count past attempts per cart so AI knows which touch number it's on\nconst recoveries = $('\ud83d\udcc8 Read Recovery Log (Learning)').all().map(i => i.json);\nconst touchCount = {};\nrecoveries.forEach(r => {\n  const cid = r['Cart ID']; if (!cid) return;\n  touchCount[cid] = (touchCount[cid] || 0) + 1;\n});\nconst cartsWithTouches = d.pendingCarts.map(c => ({ ...c, pastTouches: touchCount[c.cartId] || 0, touchNumber: (touchCount[c.cartId] || 0) + 1 }));\n\nconst carts = JSON.stringify(cartsWithTouches, null, 1);\n\nconst prompt = `You are a senior D2C customer recovery strategist for an Indian D2C brand (GlowVeda \u2014 premium skincare). For EACH abandoned cart, decide the smartest recovery approach and craft a premium personalized message.\n\nLEARNING DATA \u2014 historical success rates per approach:\n${stats}\n\nABANDONED CARTS (${cartsWithTouches.length} carts \u2014 note 'touchNumber' = which message attempt this is):\n${carts}\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nMULTI-TOUCH SEQUENCE INTELLIGENCE \u2014 critical rule\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nThis is a SEQUENCE-AWARE system. Each cart has 'touchNumber' showing which recovery attempt this is.\n\n- TOUCH 1 (first message): friendly reminder, lowest discount possible. Build relationship, not urgency.\n- TOUCH 2 (second message): social proof + light urgency + slightly higher discount.\n- TOUCH 3+ (third or later): final-offer framing + max allowed discount + scarcity. After 3 touches, send SKIP \u2014 they've decided.\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nAPPROACH SELECTION\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n- NUDGE_NO_DISCOUNT: high-intent buyer, just remind them (premium customers, touch 1, high time-on-site)\n- SOFT_DISCOUNT_10: gentle 10% nudge (hesitant first-time buyers, touch 1-2)\n- URGENT_DISCOUNT_15: time-limited 15% offer (returning customers, touch 2)\n- LOYALTY_DISCOUNT_20: 20% off (repeat abandoners, touch 2; or high LTV at risk)\n- WIN_BACK_25: 25% off + bonus (3+ past abandons, touch 3, dormant)\n- SKIP: do not message (touch 4+, or premium customer with active recent orders, or already recovered)\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nWHATSAPP MESSAGE STRUCTURE (CRITICAL \u2014 must follow this exact pattern)\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nLine 1: \ud83d\udc4b Hi [Name],\nLine 2: (blank)\nLine 3: Your cart at GlowVeda is waiting \ud83d\udecd\ufe0f\nLine 4: [Single sharp sentence about specific products or value]\nLine 5: (blank)\nLine 6: [Offer line \u2014 if discount: \"\ud83c\udf81 [X]% off with code [CODE]\" \u2014 if no discount: skip this line]\nLine 7: (blank)\nLine 8: \ud83d\udc49 Complete your order: [CART_LINK]\nLine 9: (blank)\nLine 10: \u2014 Team GlowVeda \ud83d\udc96\n\nKeep under 280 chars total. Mobile-perfect. Brand voice: warm, premium, never pushy.\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nEMAIL BODY STRUCTURE\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nWrite a 60-90 word personal note in 2 short paragraphs. Reference:\n- Their name + the specific product(s) they abandoned\n- A reason tailored to them (returning vs new, what they viewed, time on site)\n- For touch 2+: gentle acknowledgment that they saw the previous reminder\n- Single clear CTA reference (the button is rendered separately, just allude to it)\n- NEVER include the cart link directly \u2014 the template adds it\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nPRODUCTS BREAKDOWN\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nThe 'products' field may be one string. Parse it into individual items (split on ' + ' BUT respect parentheses like 'Combo (A + B + C)' = one product). Return as an array.\n\nReturn EXACT JSON:\n{\n  \"decisions\": [\n    {\n      \"cart_id\": \"exact cart id\",\n      \"touch_number\": 1,\n      \"approach\": \"NUDGE_NO_DISCOUNT | SOFT_DISCOUNT_10 | URGENT_DISCOUNT_15 | LOYALTY_DISCOUNT_20 | WIN_BACK_25 | SKIP\",\n      \"channel\": \"email | whatsapp | both | skip\",\n      \"tone\": \"warm | professional | urgent | playful\",\n      \"discount_percent\": 0,\n      \"promo_code\": \"GLOW10 | BACK15 | VIP20 | COMEBACK25 | (empty if no discount)\",\n      \"reasoning\": \"one sharp sentence on why this approach for this customer at this touch number\",\n      \"email_subject\": \"subject line under 50 chars\",\n      \"email_body\": \"personal email body 60-90 words, 2 paragraphs, no cart link\",\n      \"whatsapp_message\": \"structured WhatsApp following exact pattern above\",\n      \"products_breakdown\": [\"Product 1\", \"Product 2\"],\n      \"headline_text\": \"Hi [Name], your cart is waiting (or for touch 2: Still thinking? / for touch 3: Last chance)\",\n      \"urgency_line\": \"one warm urgency line for the email (with alarm emoji if appropriate)\",\n      \"expected_recovery_probability\": \"percentage estimate\"\n    }\n  ],\n  \"batch_summary\": \"one-paragraph summary of this batch \u2014 what's the strategy, what's the risk, what to watch\"\n}\n\nIndian D2C context. INR. Indian English. Premium brand voice \u2014 never desperate.\nReturn ONLY valid JSON, no markdown, no backticks.`;\n\nreturn [{ json: { ...d, strategistPrompt: prompt, cartsWithTouches } }];"
+      },
+      "id": "37d9a15e-6d6f-4a3a-ade5-3cdd00bcebe8",
+      "name": "\ud83d\udd27 Build Strategist Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1248,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ role: 'user', parts: [{ text: $json.strategistPrompt }] }], generationConfig: { temperature: 0.6, maxOutputTokens: 16000, thinkingConfig: { thinkingBudget: 0 } } }) }}",
+        "options": {}
+      },
+      "id": "ae374473-35d0-4303-ac12-9230215f080d",
+      "name": "\ud83e\udde0 AGENT 1: Recovery Strategist",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1024,
+        112
+      ],
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Query Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse decisions with STRICT validation, generate promo codes, compute savings\nconst aiResp = $input.first().json;\nconst d = $('\ud83d\udd27 Build Strategist Prompt').first().json;\n\nlet analysis = { decisions: [], batch_summary: 'Parse failed, using safe defaults.' };\ntry {\n  let raw = '';\n  const parts = aiResp?.candidates?.[0]?.content?.parts || [];\n  for (const p of parts) { if (p && p.text) raw += p.text; }\n  if (raw) {\n    let t = raw.replace(/```json/gi, '').replace(/```/g, '').trim();\n    const s = t.indexOf('{'), e = t.lastIndexOf('}');\n    if (s >= 0 && e > s) t = t.substring(s, e + 1);\n    analysis = JSON.parse(t);\n  }\n} catch (e) {\n  analysis.decisions = d.pendingCarts.map(c => ({\n    cart_id: c.cartId, approach: 'SOFT_DISCOUNT_10', channel: 'email', tone: 'warm',\n    discount_percent: 10, promo_code: 'GLOW10', reasoning: 'Fallback safe nudge (AI parse failed)',\n    email_subject: 'You left something behind', email_body: 'Hi ' + c.customerName + ', your cart is waiting.',\n    whatsapp_message: '\ud83d\udc4b Hi ' + c.customerName + ',\\n\\nYour cart at GlowVeda is waiting \ud83d\udecd\ufe0f\\nReady to complete your order?\\n\\n\ud83c\udf81 10% off with code GLOW10\\n\\n\ud83d\udc49 [CART_LINK]\\n\\n\u2014 Team GlowVeda \ud83d\udc96',\n    products_breakdown: [c.products || 'your items'],\n    headline_text: 'Hi ' + c.customerName + ', your cart is waiting',\n    urgency_line: 'Your items are popular and selling fast!',\n    touch_number: 1, expected_recovery_probability: '15%'\n  }));\n}\n\n// Promo code map (used if AI doesn't return one)\nconst codeMap = {\n  NUDGE_NO_DISCOUNT: '',\n  SOFT_DISCOUNT_10: 'GLOW10',\n  URGENT_DISCOUNT_15: 'BACK15',\n  LOYALTY_DISCOUNT_20: 'VIP20',\n  WIN_BACK_25: 'COMEBACK25'\n};\n\nconst decMap = {};\n(analysis.decisions || []).forEach(dec => {\n  if (!dec || !dec.cart_id || !dec.approach || !dec.channel) return;\n  decMap[dec.cart_id] = dec;\n});\n\nconst toProcess = [];\nd.pendingCarts.forEach(c => {\n  if (!c.cartId) return;\n  const dec = decMap[c.cartId];\n  if (!dec || dec.approach === 'SKIP' || dec.channel === 'skip') return;\n  if (!c.customerEmail && !c.customerPhone) return;\n\n  // Promo code \u2014 use AI's choice, fallback to map\n  const promoCode = dec.promo_code || codeMap[dec.approach] || '';\n  const discount = dec.discount_percent || 0;\n  const savings = Math.round((c.cartValue * discount) / 100);\n  const finalPrice = c.cartValue - savings;\n\n  // Cart link with auto-apply discount code\n  const cartLink = 'https://yourbrand.com/recover-cart?cid=' + encodeURIComponent(c.cartId) +\n                   '&token=' + Date.now().toString(36) +\n                   (promoCode ? '&code=' + promoCode : '');\n\n  const emailBody = String(dec.email_body || '').replace(/\\[CART_LINK\\]/g, cartLink);\n  const whatsappMsg = String(dec.whatsapp_message || '').replace(/\\[CART_LINK\\]/g, cartLink);\n\n  if (!emailBody && !whatsappMsg) return;\n\n  toProcess.push({\n    cart: c,\n    decision: dec,\n    cartLink, emailBody, whatsappMsg,\n    promoCode, savings, finalPrice,\n    productsBreakdown: dec.products_breakdown || [c.products || 'your items'],\n    headlineText: dec.headline_text || ('Hi ' + c.customerName + ', your cart is waiting'),\n    urgencyLine: dec.urgency_line || 'These items are popular and selling fast!',\n    sendEmail: (dec.channel === 'email' || dec.channel === 'both') && !!c.customerEmail && !!emailBody,\n    sendWhatsapp: (dec.channel === 'whatsapp' || dec.channel === 'both') && !!c.customerPhone && !!whatsappMsg\n  });\n});\n\nconst counts = { NUDGE_NO_DISCOUNT:0, SOFT_DISCOUNT_10:0, URGENT_DISCOUNT_15:0, LOYALTY_DISCOUNT_20:0, WIN_BACK_25:0, SKIP:0 };\n(analysis.decisions || []).forEach(dec => { if (counts[dec.approach] !== undefined) counts[dec.approach]++; });\n\n// Total cart value at stake (for owner alert)\nconst totalValueAtStake = toProcess.reduce((s, p) => s + p.cart.cartValue, 0);\nconst totalPotentialSavings = toProcess.reduce((s, p) => s + p.savings, 0);\n\nreturn [{ json: { ...d, analysis, toProcess, counts, processCount: toProcess.length, totalValueAtStake, totalPotentialSavings, batchSummary: analysis.batch_summary || '', runTime: new Date().toISOString() } }];"
+      },
+      "id": "a173469b-b979-4951-9464-66a20b01f1c4",
+      "name": "\ud83d\udd00 Parse + Prep Sends",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Fan out into one item per cart - carries all premium template fields\nconst d = $input.first().json;\nreturn d.toProcess.map(p => ({ json: {\n  cartId: p.cart.cartId,\n  customerName: p.cart.customerName,\n  customerEmail: p.cart.customerEmail,\n  customerPhone: p.cart.customerPhone,\n  cartValue: p.cart.cartValue,\n  products: p.cart.products,\n  productsBreakdown: p.productsBreakdown,\n  approach: p.decision.approach,\n  touchNumber: p.decision.touch_number || 1,\n  channel: p.decision.channel,\n  tone: p.decision.tone,\n  discount: p.decision.discount_percent,\n  promoCode: p.promoCode,\n  savings: p.savings,\n  finalPrice: p.finalPrice,\n  reasoning: p.decision.reasoning,\n  emailSubject: p.decision.email_subject,\n  emailBody: p.emailBody,\n  whatsappMsg: p.whatsappMsg,\n  cartLink: p.cartLink,\n  headlineText: p.headlineText,\n  urgencyLine: p.urgencyLine,\n  expectedRecovery: p.decision.expected_recovery_probability,\n  sendEmail: p.sendEmail,\n  sendWhatsapp: p.sendWhatsapp,\n  isReturning: p.cart.profile.isReturning,\n  customerTier: p.cart.profile.customerTier,\n  minsSinceAbandon: p.cart.minsSinceAbandon\n}}));"
+      },
+      "id": "4f25b861-49f4-4039-8025-dc0d7123ff4f",
+      "name": "\ud83d\udd01 Fan Out per Cart",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        96,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Premium itemized email template \u2014 light theme, items table, gradient promo banner, big CTA\nconst d = $input.first().json;\n\nconst c = {\n  brand: '#0f172a',     // deep navy header\n  brandLight: '#1e293b',\n  accent: '#f97316',    // orange CTA gradient start\n  accentDeep: '#dc2626', // red CTA gradient end\n  cta1: '#7c3aed',      // purple CTA\n  cta2: '#4f46e5',      // indigo CTA\n  cardBg: '#ffffff',\n  cardBorder: '#e2e8f0',\n  text: '#0f172a',\n  textLight: '#64748b',\n  textMuted: '#94a3b8',\n  urgentRed: '#dc2626',\n  savingsGreen: '#16a34a',\n  rowBg: '#f8fafc',\n  pageBg: '#f1f5f9'\n};\n\nconst touchLabel = d.touchNumber === 1 ? 'Friendly Reminder' :\n                   d.touchNumber === 2 ? 'Quick Follow-up' :\n                   d.touchNumber >= 3 ? 'Last Chance' : 'Cart Update';\n\nconst headline = d.headlineText || ('Hi ' + d.customerName + ', your cart is waiting');\nconst urgency = d.urgencyLine || 'These items are popular and selling fast!';\n\n// Render product items\nconst itemRows = (d.productsBreakdown || [d.products || 'Your items']).map(item =>\n  '<tr>' +\n    '<td style=\"padding:14px 8px;border-bottom:1px solid ' + c.cardBorder + ';\">' +\n      '<table style=\"border-collapse:collapse;\"><tr>' +\n        '<td style=\"width:40px;padding-right:12px;\"><div style=\"width:36px;height:36px;background:' + c.rowBg + ';border-radius:6px;display:inline-block;text-align:center;line-height:36px;font-size:18px;\">\ud83d\udce6</div></td>' +\n        '<td style=\"color:' + c.text + ';font-size:14px;font-weight:600;\">' + item + '</td>' +\n      '</tr></table>' +\n    '</td>' +\n    '<td style=\"padding:14px 8px;text-align:center;color:' + c.textLight + ';font-size:13px;border-bottom:1px solid ' + c.cardBorder + ';\">x1</td>' +\n  '</tr>'\n).join('');\n\n// Discount banner (only if discount > 0)\nlet promoBanner = '';\nif (d.discount > 0 && d.promoCode) {\n  promoBanner =\n    '<div style=\"background:linear-gradient(135deg,' + c.accent + ' 0%,' + c.accentDeep + ' 100%);border-radius:12px;padding:22px;text-align:center;margin:20px 0;\">' +\n      '<p style=\"color:#fff;font-size:11px;font-weight:700;margin:0 0 6px;letter-spacing:2px;\">\ud83c\udf81 EXCLUSIVE OFFER FOR YOU</p>' +\n      '<p style=\"color:#fff;font-size:32px;font-weight:900;letter-spacing:3px;margin:4px 0;font-family:Arial Black,sans-serif;\">' + d.promoCode + '</p>' +\n      '<p style=\"color:#fff;font-size:14px;margin:6px 0 0;\">Use this code for <b>' + d.discount + '% OFF</b> \u2014 Save \u20b9' + d.savings + '!</p>' +\n    '</div>';\n}\n\n// Pricing breakdown table footer\nlet pricingRows = '<tr><td colspan=\"2\" style=\"padding:14px 8px;border-bottom:1px solid ' + c.cardBorder + ';\"><table style=\"width:100%;border-collapse:collapse;\"><tr><td style=\"color:' + c.text + ';font-size:14px;font-weight:700;\">Cart Total</td><td style=\"text-align:right;color:' + c.text + ';font-size:16px;font-weight:800;\">\u20b9' + d.cartValue.toLocaleString('en-IN') + '</td></tr></table></td></tr>';\nif (d.discount > 0) {\n  pricingRows += '<tr><td colspan=\"2\" style=\"padding:10px 8px;\"><table style=\"width:100%;border-collapse:collapse;\"><tr>' +\n    '<td style=\"color:' + c.savingsGreen + ';font-size:13px;font-weight:600;\">After ' + (d.promoCode || '') + ' (' + d.discount + '% off)</td>' +\n    '<td style=\"text-align:right;color:' + c.savingsGreen + ';font-size:16px;font-weight:800;\">\u20b9' + d.finalPrice.toLocaleString('en-IN') + '</td>' +\n    '</tr></table></td></tr>';\n}\n\nconst tierBadge = d.customerTier === 'premium'\n  ? '<span style=\"background:' + c.accent + ';color:#fff;padding:4px 12px;border-radius:14px;font-size:10px;font-weight:800;letter-spacing:1px;display:inline-block;margin-top:8px;\">\u2b50 PREMIUM MEMBER</span>'\n  : '';\n\nconst body = (d.emailBody || '').replace(/\\n/g, '<br>');\n\nconst html =\n'<div style=\"background:' + c.pageBg + ';padding:32px 16px;font-family:Segoe UI,Arial,sans-serif;\">' +\n  '<div style=\"max-width:640px;margin:0 auto;background:' + c.cardBg + ';border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(15,23,42,0.08);\">' +\n\n    // Navy header band\n    '<div style=\"background:' + c.brand + ';padding:28px 24px;text-align:center;\">' +\n      '<h1 style=\"color:#fff;font-size:24px;font-weight:800;margin:0;letter-spacing:1px;\">GlowVeda</h1>' +\n      '<p style=\"color:#94a3b8;font-size:12px;margin:4px 0 0;letter-spacing:3px;text-transform:uppercase;\">' + touchLabel + '</p>' +\n    '</div>' +\n\n    // Body\n    '<div style=\"padding:32px 28px;\">' +\n\n      // Hero title\n      '<h2 style=\"color:' + c.text + ';font-size:24px;font-weight:800;margin:0 0 8px;line-height:1.3;\">' + headline + ' \ud83d\udecd\ufe0f</h2>' +\n      tierBadge +\n\n      // Personal message from AI\n      '<p style=\"color:' + c.textLight + ';font-size:15px;line-height:1.7;margin:18px 0 0;\">' + body + '</p>' +\n\n      // Urgency line\n      '<p style=\"color:' + c.urgentRed + ';font-size:14px;font-weight:600;line-height:1.6;margin:18px 0 0;\">\u23f0 ' + urgency + '</p>' +\n\n      // Cart breakdown card\n      '<div style=\"background:' + c.rowBg + ';border:1px solid ' + c.cardBorder + ';border-radius:12px;padding:18px;margin:24px 0 0;\">' +\n        '<p style=\"color:' + c.text + ';font-size:13px;font-weight:700;margin:0 0 12px;letter-spacing:1px;\">\ud83d\uded2 YOUR CART</p>' +\n        '<table style=\"width:100%;border-collapse:collapse;\">' +\n          '<thead><tr>' +\n            '<th style=\"text-align:left;padding:8px 8px;color:' + c.textMuted + ';font-size:10px;font-weight:700;letter-spacing:1px;border-bottom:1px solid ' + c.cardBorder + ';\">ITEM</th>' +\n            '<th style=\"text-align:center;padding:8px 8px;color:' + c.textMuted + ';font-size:10px;font-weight:700;letter-spacing:1px;border-bottom:1px solid ' + c.cardBorder + ';\">QTY</th>' +\n          '</tr></thead>' +\n          '<tbody>' + itemRows + pricingRows + '</tbody>' +\n        '</table>' +\n      '</div>' +\n\n      // Promo banner (only when discount)\n      promoBanner +\n\n      // Big CTA button\n      '<div style=\"text-align:center;margin:24px 0 8px;\">' +\n        '<a href=\"' + d.cartLink + '\" style=\"display:inline-block;background:linear-gradient(135deg,' + c.cta1 + ' 0%,' + c.cta2 + ' 100%);color:#fff;padding:16px 44px;border-radius:50px;text-decoration:none;font-size:15px;font-weight:700;letter-spacing:0.5px;box-shadow:0 4px 14px rgba(124,58,237,0.35);\">Complete My Order Now \u2192</a>' +\n      '</div>' +\n\n      // Helper text\n      '<p style=\"color:' + c.textMuted + ';font-size:11px;text-align:center;margin:14px 0 0;\">Or <a href=\"' + d.cartLink + '\" style=\"color:' + c.cta1 + ';text-decoration:underline;\">click here</a> to return to your cart</p>' +\n\n    '</div>' +\n\n    // Footer\n    '<div style=\"background:' + c.rowBg + ';padding:18px 28px;text-align:center;border-top:1px solid ' + c.cardBorder + ';\">' +\n      '<p style=\"color:' + c.textMuted + ';font-size:10px;margin:6px 0 0;\">\u00a9 GlowVeda \u2014 Premium Indian Skincare</p>' +\n    '</div>' +\n\n  '</div>' +\n'</div>';\n\nreturn [{ json: { ...d, recoveryHtml: html } }];"
+      },
+      "id": "ad065105-9da7-43fe-a791-a7cced9337ec",
+      "name": "\ud83d\udcdd Build Recovery HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "send-email",
+              "leftValue": "={{ $json.sendEmail }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ac74c42c-fadf-4370-8a6f-befd0e8d0350",
+      "name": "\ud83d\udce7 Should Send Email?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        544,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "=YOUR_EMAIL@example.com",
+        "subject": "={{ $json.emailSubject }}",
+        "message": "={{ $json.recoveryHtml }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "186260fa-02d5-486e-b913-5b7acf6fa9d0",
+      "name": "\ud83d\udce7 Send Recovery Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        768,
+        -80
+      ],
+      "webhookId": "a5316ef1-f1da-4d77-bdc6-6e1b011373df",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "send-wa",
+              "leftValue": "={{ $json.sendWhatsapp }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "4f300a8e-bb2a-4c18-b586-f0b557af0272",
+      "name": "\ud83d\udcac Should Send WhatsApp?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        544,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "18HzrQKEstKNeL1V3ZJiajLXLTMn_oitoDcitG4avp8M",
+          "mode": "list",
+          "cachedResultName": "AI Abandoned Cart Intelligence",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/18HzrQKEstKNeL1V3ZJiajLXLTMn_oitoDcitG4avp8M/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 3981189,
+          "mode": "list",
+          "cachedResultName": "Recovery_log_tab",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/18HzrQKEstKNeL1V3ZJiajLXLTMn_oitoDcitG4avp8M/edit#gid=3981189"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Cart ID": "={{ $('\ud83d\udd01 Fan Out per Cart').item.json.cartId }}",
+            "Customer Name": "={{ $('\ud83d\udd01 Fan Out per Cart').item.json.customerName }}",
+            "Customer Email": "={{ $('\ud83d\udd01 Fan Out per Cart').item.json.customerEmail }}",
+            "Cart Value": "={{ $('\ud83d\udd01 Fan Out per Cart').item.json.cartValue }}",
+            "Approach Used": "={{ $('\ud83d\udd01 Fan Out per Cart').item.json.approach }}",
+            "Channel": "={{ $('\ud83d\udd01 Fan Out per Cart').item.json.channel }}",
+            "Discount %": "={{ $('\ud83d\udd01 Fan Out per Cart').item.json.discount }}",
+            "Tone": "={{ $('\ud83d\udd01 Fan Out per Cart').item.json.tone }}",
+            "Subject": "={{ $('\ud83d\udd01 Fan Out per Cart').item.json.emailSubject }}",
+            "Expected Recovery %": "={{ $('\ud83d\udd01 Fan Out per Cart').item.json.expectedRecovery }}",
+            "AI Reasoning": "={{ $('\ud83d\udd01 Fan Out per Cart').item.json.reasoning }}",
+            "Customer Tier": "={{ $('\ud83d\udd01 Fan Out per Cart').item.json.customerTier }}",
+            "Returning": "={{ $('\ud83d\udd01 Fan Out per Cart').item.json.isReturning ? 'YES' : 'NO' }}",
+            "Mins Since Abandon": "={{ $('\ud83d\udd01 Fan Out per Cart').item.json.minsSinceAbandon }}",
+            "Outcome": "SENT",
+            "Send At": "={{ $now }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Send At",
+              "displayName": "Send At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Cart ID",
+              "displayName": "Cart ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Customer Name",
+              "displayName": "Customer Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Customer Email",
+              "displayName": "Customer Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Cart Value",
+              "displayName": "Cart Value",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Approach Used",
+              "displayName": "Approach Used",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Channel",
+              "displayName": "Channel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Discount %",
+              "displayName": "Discount %",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tone",
+              "displayName": "Tone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Subject",
+              "displayName": "Subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Expected Recovery %",
+              "displayName": "Expected Recovery %",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI Reasoning",
+              "displayName": "AI Reasoning",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Customer Tier",
+              "displayName": "Customer Tier",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Returning",
+              "displayName": "Returning",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Mins Since Abandon",
+              "displayName": "Mins Since Abandon",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Outcome",
+              "displayName": "Outcome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Recovered Value",
+              "displayName": "Recovered Value",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "91a47e12-0eb3-436d-9eeb-dc4a6178aad9",
+      "name": "\ud83d\udcca Log Recovery Attempt",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        992,
+        16
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "18HzrQKEstKNeL1V3ZJiajLXLTMn_oitoDcitG4avp8M",
+          "mode": "list",
+          "cachedResultName": "AI Abandoned Cart Intelligence",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/18HzrQKEstKNeL1V3ZJiajLXLTMn_oitoDcitG4avp8M/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Abandoned_Carts_Tab",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/18HzrQKEstKNeL1V3ZJiajLXLTMn_oitoDcitG4avp8M/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Cart ID": "={{ $('\ud83d\udd01 Fan Out per Cart').item.json.cartId }}",
+            "Status": "RECOVERY_SENT"
+          },
+          "matchingColumns": [
+            "Cart ID"
+          ],
+          "schema": [
+            {
+              "id": "Cart ID",
+              "displayName": "Cart ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Customer Email",
+              "displayName": "Customer Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Customer Phone",
+              "displayName": "Customer Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Customer Name",
+              "displayName": "Customer Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Products",
+              "displayName": "Products",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Cart Value",
+              "displayName": "Cart Value",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Currency",
+              "displayName": "Currency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Abandoned At",
+              "displayName": "Abandoned At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Last Viewed Product",
+              "displayName": "Last Viewed Product",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Time on Site Mins",
+              "displayName": "Time on Site Mins",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Source",
+              "displayName": "Source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "12b85c54-d837-4a9d-82cd-f2e862b0eace",
+      "name": "\u2705 Mark Cart as Sent",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1216,
+        16
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "={{ $json.whatsappMsg }}",
+        "additionalFields": {}
+      },
+      "id": "dc1182e1-b843-4c48-930b-db3a259e06b4",
+      "name": "\ud83d\udcf2 Send Recovery Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        768,
+        112
+      ],
+      "webhookId": "1e99dcc7-4e3b-4d99-9c55-e7e887c83394",
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "={{ $json.ownerAlertMsg }}",
+        "additionalFields": {}
+      },
+      "id": "66f1e0c6-4447-4c97-9d1f-65a55af8b821",
+      "name": "\ud83d\udcf2 Send Owner Alert (Telegram)",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        320,
+        208
+      ],
+      "webhookId": "be2a6305-2159-457a-a028-4bbaa4a481de",
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst carts = data.cartSends || [];\n\nconst enriched = carts.map(cart => {\n  const ltv = cart.customerHistory?.lifetimeValue || 0;\n  const orders = cart.customerHistory?.lifetimeOrders || 0;\n  const tier = cart.customerHistory?.tier || 'standard';\n  const pastRecoveries = cart.customerHistory?.pastRecoveries || 0;\n  const pastAbandons = cart.customerHistory?.pastAbandons || 0;\n\n  let vipScore = 0;\n  if (ltv > 10000) vipScore += 3;\n  else if (ltv > 5000) vipScore += 2;\n  else if (ltv > 2000) vipScore += 1;\n  if (orders > 5) vipScore += 2;\n  else if (orders > 2) vipScore += 1;\n  if (tier === 'premium') vipScore += 2;\n  if (pastRecoveries > 1) vipScore += 1;\n\n  const isVip = vipScore >= 4;\n  const recoveryRisk = pastAbandons > 2 && pastRecoveries === 0 ? 'high' : 'normal';\n\n  return {\n    ...cart,\n    vipScore,\n    isVip,\n    recoveryRisk,\n    recommendedApproach: isVip ? 'PREMIUM' : (recoveryRisk === 'high' ? 'WIN_BACK' : cart.approach)\n  };\n});\n\nreturn [{ json: { ...data, cartSends: enriched } }];"
+      },
+      "id": "737a8a42-bfee-421e-8774-07435e4ce542",
+      "name": "\ud83d\udc8e VIP Customer Detector",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -576,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst carts = data.cartSends || [];\n\nconst vipCarts = carts.filter(c => c.isVip);\nconst highRiskCarts = carts.filter(c => c.recoveryRisk === 'high' && !c.isVip);\nconst standardCarts = carts.filter(c => !c.isVip && c.recoveryRisk !== 'high');\n\nreturn [{ json: {\n  ...data,\n  cartSends: carts,\n  vipCount: vipCarts.length,\n  highRiskCount: highRiskCarts.length,\n  standardCount: standardCarts.length,\n  vipCartIds: vipCarts.map(c => c.cartId)\n}}];"
+      },
+      "id": "f75841d5-0597-41b9-9ca5-6d5b2fac8898",
+      "name": "\ud83d\udd00 Apply VIP Routing",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -352,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst carts = data.cartSends || [];\n\nconst enriched = carts.map(cart => {\n  const cartValue = cart.cartValue || 0;\n  const tier = cart.customerHistory?.tier || 'standard';\n  const pastAbandons = cart.customerHistory?.pastAbandons || 0;\n  const pastRecoveries = cart.customerHistory?.pastRecoveries || 0;\n  const lastDiscount = cart.customerHistory?.lastDiscountUsed || 0;\n  const isVip = cart.isVip || false;\n  const approach = cart.recommendedApproach || cart.approach || '';\n\n  let discountPct = 0;\n  let discountReason = '';\n\n  if (isVip) {\n    discountPct = 0;\n    discountReason = 'VIP customer \u2014 no discount needed, use brand value';\n  } else if (approach === 'WIN_BACK') {\n    discountPct = pastAbandons > 3 ? 25 : 20;\n    discountReason = 'Win-back offer for repeat abandoner';\n  } else if (approach === 'DISCOUNT') {\n    if (cartValue > 2000) discountPct = 10;\n    else if (cartValue > 1000) discountPct = 15;\n    else discountPct = 20;\n    discountReason = 'Standard discount scaled to cart value';\n  } else if (approach === 'URGENCY' || approach === 'FOMO') {\n    discountPct = 5;\n    discountReason = 'Small nudge to reinforce urgency';\n  } else {\n    discountPct = 0;\n    discountReason = 'No discount \u2014 approach does not require it';\n  }\n\n  if (discountPct > 0 && lastDiscount >= discountPct) {\n    discountPct = Math.min(discountPct + 5, 30);\n    discountReason += ' (increased \u2014 last discount was equal or higher)';\n  }\n\n  const discountAmount = Math.round(cartValue * discountPct / 100);\n  const finalPrice = Math.round(cartValue - discountAmount);\n\n  return {\n    ...cart,\n    discountPct,\n    discountAmount,\n    finalPrice,\n    discountReason\n  };\n});\n\nreturn [{ json: { ...data, cartSends: enriched } }];"
+      },
+      "id": "ffce61d0-03a6-42e8-8772-7f4984910ab6",
+      "name": "\ud83d\udcb0 Dynamic Discount Engine",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -128,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst carts = data.cartSends || [];\nconst recoveryLog = data.recoveryLog || [];\n\nconst totalCarts = carts.length;\nconst vipCarts = data.vipCount || 0;\nconst highRiskCarts = data.highRiskCount || 0;\nconst totalCartValue = carts.reduce((sum, c) => sum + (c.cartValue || 0), 0);\n\nconst approachBreakdown = {};\ncarts.forEach(c => {\n  const approach = c.recommendedApproach || c.approach || 'UNKNOWN';\n  approachBreakdown[approach] = (approachBreakdown[approach] || 0) + 1;\n});\n\nconst discountedCarts = carts.filter(c => c.discountPct > 0);\nconst totalDiscountValue = discountedCarts.reduce((sum, c) => sum + (c.discountAmount || 0), 0);\nconst avgDiscount = discountedCarts.length > 0 ? Math.round(discountedCarts.reduce((sum, c) => sum + c.discountPct, 0) / discountedCarts.length) : 0;\n\nconst historicalRecoveries = recoveryLog.filter(r => r.Outcome === 'RECOVERED');\nconst historicalRecoveryRate = recoveryLog.length > 0 ? Math.round(historicalRecoveries.length / recoveryLog.length * 100) : 0;\nconst totalRecoveredValue = historicalRecoveries.reduce((sum, r) => sum + (parseFloat(r['Recovered Value']) || 0), 0);\n\nconst performanceSummary = {\n  runTime: new Date().toISOString(),\n  cartsProcessed: totalCarts,\n  vipCarts,\n  highRiskCarts,\n  totalCartValueAtRisk: totalCartValue,\n  approachBreakdown,\n  discountedCarts: discountedCarts.length,\n  totalDiscountOffered: totalDiscountValue,\n  avgDiscountPct: avgDiscount,\n  historicalRecoveryRate: historicalRecoveryRate + '%',\n  totalRevenueRecovered: totalRecoveredValue,\n  estimatedRecoveryThisRun: Math.round(totalCartValue * (historicalRecoveryRate / 100))\n};\n\nreturn [{ json: { ...data, performanceSummary } }];"
+      },
+      "id": "47b0bfdd-92d4-4239-8ea0-0e1b869fdb29",
+      "name": "\ud83d\udcca Recovery Performance Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -352,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst s = data.performanceSummary || {};\nconst existing = data.ownerAlertMsg || '';\n\nconst perfMsg = `\\n\\n\ud83d\udcca *Recovery Run Summary*\\n` +\n`\ud83d\uded2 Carts processed: ${s.cartsProcessed || 0}\\n` +\n`\ud83d\udc8e VIP carts: ${s.vipCarts || 0}\\n` +\n`\u26a0\ufe0f High-risk carts: ${s.highRiskCarts || 0}\\n` +\n`\ud83d\udcb0 Total value at risk: \u20b9${s.totalCartValueAtRisk || 0}\\n` +\n`\ud83c\udfaf Approaches: ${JSON.stringify(s.approachBreakdown || {})}\\n` +\n`\ud83c\udff7\ufe0f Avg discount offered: ${s.avgDiscountPct || 0}%\\n` +\n`\ud83d\udcc8 Historical recovery rate: ${s.historicalRecoveryRate || '0%'}\\n` +\n`\ud83d\udcb5 Est. recovery this run: \u20b9${s.estimatedRecoveryThisRun || 0}`;\n\nreturn [{ json: { ...data, ownerAlertMsg: existing + perfMsg } }];"
+      },
+      "id": "19bac586-a74b-4348-a7e3-75ca9f4fe30e",
+      "name": "\ud83d\udd00 Build Performance Alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -128,
+        208
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "\ud83d\udcca Build Owner Alert1": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udcca Recovery Performance Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\u23f0 Every 15 Min Trigger": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udcca Read Abandoned Carts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udcca Read Abandoned Carts": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udc65 Read Customer History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udc65 Read Customer History": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udcc8 Read Recovery Log (Learning)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udcc8 Read Recovery Log (Learning)": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udd0d Filter & Enrich Carts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udd0d Filter & Enrich Carts": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udea6 Any Pending Carts?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udea6 Any Pending Carts?": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udd27 Build Strategist Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udd27 Build Strategist Prompt": {
+      "main": [
+        [
+          {
+            "node": "\ud83e\udde0 AGENT 1: Recovery Strategist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83e\udde0 AGENT 1: Recovery Strategist": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udd00 Parse + Prep Sends",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udd00 Parse + Prep Sends": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udcca Build Owner Alert1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "\ud83d\udc8e VIP Customer Detector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udd01 Fan Out per Cart": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udcdd Build Recovery HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udcdd Build Recovery HTML": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udce7 Should Send Email?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "\ud83d\udcac Should Send WhatsApp?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udce7 Should Send Email?": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udce7 Send Recovery Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udce7 Send Recovery Email": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udcca Log Recovery Attempt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udcca Log Recovery Attempt": {
+      "main": [
+        [
+          {
+            "node": "\u2705 Mark Cart as Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udcac Should Send WhatsApp?": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udcf2 Send Recovery Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udcf2 Send Recovery Telegram": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udcca Log Recovery Attempt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udea6 Should Alert Owner?1": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udcf2 Send Owner Alert (Telegram)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udc8e VIP Customer Detector": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udd00 Apply VIP Routing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udd00 Apply VIP Routing": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udcb0 Dynamic Discount Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udcb0 Dynamic Discount Engine": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udd01 Fan Out per Cart",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udcca Recovery Performance Summary": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udd00 Build Performance Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udd00 Build Performance Alert": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udea6 Should Alert Owner?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "YOUR_VERSION_ID",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "YOUR_WORKFLOW_ID",
+  "tags": []
+}
